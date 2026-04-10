@@ -1,0 +1,47 @@
+---
+- name: Install ccache
+  pacman:
+    name: ccache
+    state: present
+
+- name: Use all cores for compilation
+  lineinfile:
+    path: /etc/makepkg.conf
+    regexp: '^#?MAKEFLAGS='
+    line: 'MAKEFLAGS="-j$(nproc)"'
+
+- name: Set native arch CFLAGS
+  lineinfile:
+    path: /etc/makepkg.conf
+    regexp: '^#?CFLAGS='
+    line: 'CFLAGS="-march=native -O2 -pipe -fno-plt -fexceptions -Wp,-D_FORTIFY_SOURCE=3 -Wformat -Werror=format-security -fstack-clash-protection -fcf-protection -fno-omit-frame-pointer -mno-omit-leaf-frame-pointer"'
+
+- name: Set CXXFLAGS to match CFLAGS
+  lineinfile:
+    path: /etc/makepkg.conf
+    regexp: '^#?CXXFLAGS='
+    line: 'CXXFLAGS="$CFLAGS -Wp,-D_GLIBCXX_ASSERTIONS"'
+
+- name: Enable ccache in BUILDENV
+  lineinfile:
+    path: /etc/makepkg.conf
+    regexp: '^#?BUILDENV='
+    line: 'BUILDENV=(!distcc color ccache check !sign)'
+
+- name: Use tmpfs for builds
+  lineinfile:
+    path: /etc/makepkg.conf
+    regexp: '^#?BUILDDIR='
+    line: 'BUILDDIR=/tmp/makepkg'
+
+- name: Use multi-threaded compression
+  lineinfile:
+    path: /etc/makepkg.conf
+    regexp: '^#?COMPRESSXZ='
+    line: 'COMPRESSXZ=(xz -c -z --threads=0 -)'
+
+- name: Use zstd for package compression
+  lineinfile:
+    path: /etc/makepkg.conf
+    regexp: '^#?PKGEXT='
+    line: "PKGEXT='.pkg.tar.zst'"

@@ -27,6 +27,9 @@
   vars:
     local_user: "{{ lookup('env', 'SUDO_USER') | default('') }}"
   roles:
+    - makepkg-optimization
+    - pacman-optimization
+    - system-tweaks
     - fonts
     - zsh
     - awww
@@ -34,3 +37,8 @@
     - audio
     - thunar
     - polkit
+    - swaync
+    - hyprlock
+    - hypridle
+    - xdg-portal
+    - wl-clipboard

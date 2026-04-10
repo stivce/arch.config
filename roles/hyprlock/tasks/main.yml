@@ -1,0 +1,5 @@
+---
+- name: Install hyprlock
+  pacman:
+    name: hyprlock
+    state: present

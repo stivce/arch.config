@@ -1,0 +1,45 @@
+---
+- name: Install zram-generator and cpupower
+  pacman:
+    name:
+      - zram-generator
+      - cpupower
+    state: present
+
+- name: Configure zram swap (half of RAM, zstd)
+  copy:
+    dest: /etc/systemd/zram-generator.conf
+    content: |
+      [zram0]
+      zram-size = ram / 2
+      compression-algorithm = zstd
+    mode: '0644'
+
+- name: Set NVMe I/O scheduler to none via udev
+  copy:
+    dest: /etc/udev/rules.d/60-ioscheduler.rules
+    content: |
+      ACTION=="add|change", KERNEL=="nvme[0-9]*", ATTR{queue/scheduler}="none"
+      ACTION=="add|change", KERNEL=="sd[a-z]|hd[a-z]", ATTR{queue/rotational}=="0", ATTR{queue/scheduler}="mq-deadline"
+    mode: '0644'
+
+- name: Set CPU frequency governor to schedutil
+  copy:
+    dest: /etc/tmpfiles.d/cpu-governor.conf
+    content: |
+      w /sys/devices/system/cpu/cpu*/cpufreq/scaling_governor - - - - schedutil
+    mode: '0644'
+
+- name: Cap journald log size
+  lineinfile:
+    path: /etc/systemd/journald.conf
+    regexp: '^#?SystemMaxUse='
+    line: 'SystemMaxUse=500M'
+
+- name: Tune vm settings for desktop responsiveness
+  copy:
+    dest: /etc/sysctl.d/99-desktop.conf
+    content: |
+      vm.swappiness=10
+      vm.vfs_cache_pressure=50
+    mode: '0644'
