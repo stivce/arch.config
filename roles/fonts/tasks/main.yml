@@ -3,3 +3,13 @@
   pacman:
     name: ttf-liberation
     state: present
+
+- name: Install Apple fonts from AUR
+  kewlfft.aur.aur:
+    name:
+      - otf-apple-sf-pro
+      - ttf-apple-emoji
+    use: yay
+    state: present
+  become: true
+  become_user: sn0w
