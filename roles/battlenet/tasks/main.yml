@@ -1,4 +1,10 @@
 ---
+- name: Install WowUp addon manager from AUR
+  shell: yay -S --noconfirm --needed wowup-cf-bin
+  become_user: "{{ local_user }}"
+  register: result
+  changed_when: "'installing' in result.stdout"
+
 - name: Install umu-launcher
   pacman:
     name: umu-launcher
