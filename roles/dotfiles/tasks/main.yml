@@ -19,9 +19,6 @@
     path: "/home/{{ local_user }}/{{ item.path | basename }}"
     state: absent
   loop: "{{ dotfiles_entries.files }}"
-  when: >
-    (lookup('fileglob', '/home/' ~ local_user ~ '/' ~ (item.path | basename)) | length > 0)
-    and not (lookup('pipe', 'readlink /home/' ~ local_user ~ '/' ~ (item.path | basename) ~ ' 2>/dev/null') == item.path)
 
 - name: Create symlinks for dotfiles
   file:
@@ -29,6 +26,5 @@
     dest: "/home/{{ local_user }}/{{ item.path | basename }}"
     state: link
     owner: "{{ local_user }}"
-    force: true
   loop: "{{ dotfiles_entries.files }}"
   become_user: "{{ local_user }}"
