@@ -36,10 +36,25 @@
     regexp: '^#?SystemMaxUse='
     line: 'SystemMaxUse=500M'
 
-- name: Tune vm settings for desktop responsiveness
+- name: Tune vm settings, enable tcp_bbr and hugepages
   copy:
     dest: /etc/sysctl.d/99-desktop.conf
     content: |
       vm.swappiness=10
       vm.vfs_cache_pressure=50
+      # Transparent hugepages — madvise avoids wasting memory vs always
+      kernel.transparent_hugepage=madvise
+      # TCP BBR congestion control + fq for better throughput/latency
+      net.core.default_qdisc=fq
+      net.ipv4.tcp_congestion_control=bbr
+      # Network buffer tuning
+      net.core.rmem_max=16777216
+      net.core.wmem_max=16777216
+    mode: '0644'
+
+- name: Load tcp_bbr module
+  copy:
+    dest: /etc/modules-load.d/bbr.conf
+    content: |
+      tcp_bbr
     mode: '0644'

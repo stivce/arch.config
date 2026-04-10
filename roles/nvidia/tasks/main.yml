@@ -8,3 +8,25 @@
   pacman:
     name: nvidia-settings
     state: present
+
+- name: Preserve VRAM on suspend
+  copy:
+    dest: /etc/modprobe.d/nvidia-power.conf
+    content: |
+      options nvidia NVreg_PreserveVideoMemoryAllocations=1
+    mode: '0644'
+
+- name: Enable nvidia-persistenced for reduced GPU init latency
+  systemd:
+    name: nvidia-persistenced
+    enabled: true
+    state: started
+
+- name: Enable nvidia suspend/resume/hibernate services
+  systemd:
+    name: "{{ item }}"
+    enabled: true
+  loop:
+    - nvidia-suspend.service
+    - nvidia-resume.service
+    - nvidia-hibernate.service
