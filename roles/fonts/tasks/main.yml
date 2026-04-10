@@ -1,0 +1,5 @@
+---
+- name: Install Microsoft fonts
+  pacman:
+    name: ttf-ms-fonts
+    state: present
