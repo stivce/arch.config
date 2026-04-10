@@ -12,6 +12,7 @@
     depth: 1
     excludes: ".git"
     file_type: any
+    hidden: true
   register: dotfiles_entries
 
 - name: Remove conflicting files or directories at symlink targets
