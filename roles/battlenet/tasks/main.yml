@@ -11,10 +11,11 @@
     mode: '0755'
 
 - name: Download Battle.net installer
-  get_url:
-    url: https://downloader.battle.net/download/getInstaller?os=win&installer=Battle.net-Setup.exe
-    dest: "{{ ansible_facts['user_dir'] }}/Games/Battle.net-Setup.exe"
-    mode: '0644'
+  command: >
+    curl -fLo {{ ansible_facts['user_dir'] }}/Games/Battle.net-Setup.exe 
+    https://downloader.battle.net/download/getInstaller?os=win&installer=Battle.net-Setup.exe
+  args:
+    creates: "{{ ansible_facts['user_dir'] }}/Games/Battle.net-Setup.exe"
   register: battlenet_installer
 
 - name: Install Battle.net via umu-launcher
