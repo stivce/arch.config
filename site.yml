@@ -42,3 +42,7 @@
     - hypridle
     - xdg-portal
     - wl-clipboard
+    - cliphist
+    - brightnessctl
+    - playerctl
+    - theming-gtk
