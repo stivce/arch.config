@@ -1,0 +1,5 @@
+---
+- name: Install brightnessctl
+  pacman:
+    name: brightnessctl
+    state: present
