@@ -20,7 +20,6 @@
   systemd:
     name: nvidia-persistenced
     enabled: true
-    state: started
 
 - name: Enable nvidia suspend/resume/hibernate services
   systemd:
