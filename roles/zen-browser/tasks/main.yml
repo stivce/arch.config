@@ -1,6 +1,5 @@
 ---
 - name: Install zen-browser from AUR
-  kewlfft.aur.aur:
-    name: zen-browser-bin
-    use: yay
-    state: present
+  command: yay -S --noconfirm --needed zen-browser-bin
+  args:
+    creates: /usr/bin/zen-browser

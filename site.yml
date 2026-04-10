@@ -1,14 +1,4 @@
 ---
-- name: Bootstrap collections
-  hosts: localhost
-  connection: local
-  become: true
-  pre_tasks:
-    - name: Install kewlfft.aur collection system-wide
-      command: ansible-galaxy collection install kewlfft.aur -p /usr/share/ansible/collections
-      args:
-        creates: /usr/share/ansible/collections/ansible_collections/kewlfft/aur
-
 - name: Install Hyprland
   hosts: localhost
   connection: local

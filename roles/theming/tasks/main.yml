@@ -1,6 +1,5 @@
 ---
 - name: Install matugen from AUR
-  kewlfft.aur.aur:
-    name: matugen-bin
-    use: yay
-    state: present
+  command: yay -S --noconfirm --needed matugen-bin
+  args:
+    creates: /usr/bin/matugen
