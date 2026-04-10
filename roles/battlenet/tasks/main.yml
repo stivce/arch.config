@@ -21,7 +21,6 @@
 - name: Install Battle.net via umu-launcher
   command: >
     sh -c "WINEPREFIX={{ ansible_facts['user_dir'] }}/Games/battlenet GAMEID=umu-battlenet umu-run {{ ansible_facts['user_dir'] }}/Games/Battle.net-Setup.exe"
-  when: battlenet_installer.changed
   changed_when: false
   timeout: 300
 
@@ -29,4 +28,3 @@
   file:
     path: "{{ ansible_facts['user_dir'] }}/Games/Battle.net-Setup.exe"
     state: absent
-  when: battlenet_installer.changed
