@@ -11,6 +11,7 @@
         that: local_user != ''
         fail_msg: "local_user is empty. Run with sudo, not as root directly."
   roles:
+    - dotfiles
     - matugen
     - zen-browser
     - screenshot
