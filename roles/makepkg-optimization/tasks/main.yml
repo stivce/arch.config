@@ -4,23 +4,23 @@
     name: ccache
     state: present
 
+- name: Set native arch CFLAGS (replace multiline original)
+  replace:
+    path: /etc/makepkg.conf
+    regexp: '^#?CFLAGS=.*(\\\n.*)*'
+    replace: 'CFLAGS="-march=native -O2 -pipe -fno-plt -fexceptions -Wp,-D_FORTIFY_SOURCE=3 -Wformat -Werror=format-security -fstack-clash-protection -fcf-protection -fno-omit-frame-pointer -mno-omit-leaf-frame-pointer"'
+
+- name: Set CXXFLAGS to match CFLAGS
+  replace:
+    path: /etc/makepkg.conf
+    regexp: '^#?CXXFLAGS=.*(\\\n.*)*'
+    replace: 'CXXFLAGS="$CFLAGS -Wp,-D_GLIBCXX_ASSERTIONS"'
+
 - name: Use all cores for compilation
   lineinfile:
     path: /etc/makepkg.conf
     regexp: '^#?MAKEFLAGS='
     line: 'MAKEFLAGS="-j$(nproc)"'
-
-- name: Set native arch CFLAGS
-  lineinfile:
-    path: /etc/makepkg.conf
-    regexp: '^#?CFLAGS='
-    line: 'CFLAGS="-march=native -O2 -pipe -fno-plt -fexceptions -Wp,-D_FORTIFY_SOURCE=3 -Wformat -Werror=format-security -fstack-clash-protection -fcf-protection -fno-omit-frame-pointer -mno-omit-leaf-frame-pointer"'
-
-- name: Set CXXFLAGS to match CFLAGS
-  lineinfile:
-    path: /etc/makepkg.conf
-    regexp: '^#?CXXFLAGS='
-    line: 'CXXFLAGS="$CFLAGS -Wp,-D_GLIBCXX_ASSERTIONS"'
 
 - name: Enable ccache in BUILDENV
   lineinfile:
