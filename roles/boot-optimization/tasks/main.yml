@@ -1,0 +1,40 @@
+---
+- name: Switch mkinitcpio compression to zstd
+  lineinfile:
+    path: /etc/mkinitcpio.conf
+    regexp: '^#?COMPRESSION='
+    line: 'COMPRESSION="zstd"'
+
+- name: Set zstd compression options
+  lineinfile:
+    path: /etc/mkinitcpio.conf
+    regexp: '^#?COMPRESSION_OPTIONS='
+    line: 'COMPRESSION_OPTIONS=(-2)'
+
+- name: Enable module decompression for faster loading
+  lineinfile:
+    path: /etc/mkinitcpio.conf
+    regexp: '^#?MODULES_DECOMPRESS='
+    line: 'MODULES_DECOMPRESS="yes"'
+
+- name: Rebuild initramfs
+  command: mkinitcpio -P
+  changed_when: true
+
+- name: Set systemd default stop timeout
+  lineinfile:
+    path: /etc/systemd/system.conf
+    regexp: '^#?DefaultTimeoutStopSec='
+    line: 'DefaultTimeoutStopSec=10s'
+
+- name: Set systemd default start timeout
+  lineinfile:
+    path: /etc/systemd/system.conf
+    regexp: '^#?DefaultTimeoutStartSec='
+    line: 'DefaultTimeoutStartSec=15s'
+
+- name: Disable watchdog in systemd
+  lineinfile:
+    path: /etc/systemd/system.conf
+    regexp: '^#?RuntimeWatchdogSec='
+    line: 'RuntimeWatchdogSec=0'
