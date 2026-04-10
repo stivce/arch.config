@@ -16,15 +16,8 @@
     https://downloader.battle.net/download/getInstaller?os=win&installer=Battle.net-Setup.exe
   args:
     creates: "{{ ansible_facts['user_dir'] }}/Games/Battle.net-Setup.exe"
-  register: battlenet_installer
 
-- name: Install Battle.net via umu-launcher
-  command: >
-    sh -c "WINEPREFIX={{ ansible_facts['user_dir'] }}/Games/battlenet GAMEID=umu-battlenet umu-run {{ ansible_facts['user_dir'] }}/Games/Battle.net-Setup.exe"
-  changed_when: false
-  timeout: 300
-
-- name: Clean up installer
+- name: Remove installer after install
   file:
     path: "{{ ansible_facts['user_dir'] }}/Games/Battle.net-Setup.exe"
     state: absent
