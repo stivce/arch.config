@@ -5,10 +5,10 @@
       - grim
       - slurp
     state: present
+  become: true
   become_user: root
 
 - name: Install hyprquickframe from AUR
-  kewlfft.aur.aur:
-    name: hyprquickframe
-    use: yay
-    state: present
+  command: yay -S --noconfirm --needed hyprquickframe
+  args:
+    creates: /usr/bin/hyprquickframe

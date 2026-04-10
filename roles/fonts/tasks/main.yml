@@ -10,9 +10,6 @@
     state: present
 
 - name: Install Apple emoji font from AUR
-  kewlfft.aur.aur:
-    name: ttf-apple-emoji
-    use: yay
-    state: present
-  become: true
-  become_user: "{{ lookup('env', 'USER') }}"
+  command: yay -S --noconfirm --needed ttf-apple-emoji
+  args:
+    creates: /usr/share/fonts/TTF/AppleColorEmoji.ttf
