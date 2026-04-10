@@ -1,0 +1,21 @@
+---
+- name: Install git and base-devel (yay build dependencies)
+  pacman:
+    name:
+      - git
+      - base-devel
+    state: present
+  become_user: root
+
+- name: Clone yay AUR repository
+  git:
+    repo: https://aur.archlinux.org/yay.git
+    dest: /tmp/yay
+    update: true
+
+- name: Build and install yay
+  command:
+    cmd: makepkg -si --noconfirm
+    chdir: /tmp/yay
+  args:
+    creates: /usr/bin/yay
