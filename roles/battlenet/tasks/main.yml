@@ -6,7 +6,7 @@
 
 - name: Create games directory
   file:
-    path: "{{ ansible_user_dir }}/Games"
+    path: "{{ ansible_facts['user_dir'] }}/Games"
     state: directory
     mode: '0755'
 
