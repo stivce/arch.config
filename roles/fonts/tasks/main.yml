@@ -15,4 +15,4 @@
     use: yay
     state: present
   become: true
-  become_user: sn0w
+  become_user: "{{ ansible_env.SUDO_USER }}"
