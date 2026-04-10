@@ -1,0 +1,7 @@
+---
+- name: Install Hyprland
+  hosts: localhost
+  connection: local
+  become: true
+  roles:
+    - hyprland
