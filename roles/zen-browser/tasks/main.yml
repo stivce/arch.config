@@ -1,5 +1,6 @@
 ---
 - name: Install zen-browser from AUR
-  command: yay -S --noconfirm --needed zen-browser-bin
-  args:
-    creates: /usr/bin/zen-browser
+  shell: yay -S --noconfirm --needed zen-browser-bin
+  become_user: "{{ local_user }}"
+  register: result
+  changed_when: "'installing' in result.stdout"

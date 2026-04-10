@@ -10,6 +10,7 @@
     state: present
 
 - name: Install Apple emoji font from AUR
-  command: yay -S --noconfirm --needed ttf-apple-emoji
-  args:
-    creates: /usr/share/fonts/TTF/AppleColorEmoji.ttf
+  shell: yay -S --noconfirm --needed ttf-apple-emoji
+  become_user: "{{ local_user }}"
+  register: result
+  changed_when: "'installing' in result.stdout"

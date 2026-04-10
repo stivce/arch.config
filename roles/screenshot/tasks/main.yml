@@ -5,10 +5,9 @@
       - grim
       - slurp
     state: present
-  become: true
-  become_user: root
 
 - name: Install hyprquickframe from AUR
-  command: yay -S --noconfirm --needed hyprquickframe
-  args:
-    creates: /usr/bin/hyprquickframe
+  shell: yay -S --noconfirm --needed hyprquickframe
+  become_user: "{{ local_user }}"
+  register: result
+  changed_when: "'installing' in result.stdout"
