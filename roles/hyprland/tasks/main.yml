@@ -4,8 +4,22 @@
     name: hyprland
     state: present
 
-- name: Install yay
+- name: Install yay dependencies
   pacman:
-    name: yay
+    name:
+      - git
+      - go
     state: present
+  when: hyprland_install_aur | bool
+
+- name: Clone yay repository
+  git:
+    repo: https://github.com/Jguer/yay.git
+    dest: /tmp/yay
+    depth: 1
+  when: hyprland_install_aur | bool
+
+- name: Build and install yay
+  command: cd /tmp/yay && makepkg -sic --noconfirm
+  creates: /usr/bin/yay
   when: hyprland_install_aur | bool

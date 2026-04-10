@@ -4,7 +4,6 @@
   connection: local
   become: true
   roles:
-    - yay
     - hyprland
     - nvidia
     - kitty
