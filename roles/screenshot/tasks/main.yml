@@ -1,0 +1,14 @@
+---
+- name: Install screenshot dependencies
+  pacman:
+    name:
+      - grim
+      - slurp
+    state: present
+  become_user: root
+
+- name: Install hyprquickframe from AUR
+  kewlfft.aur.aur:
+    name: hyprquickframe
+    use: yay
+    state: present

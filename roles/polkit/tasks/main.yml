@@ -1,0 +1,7 @@
+---
+- name: Install polkit packages
+  pacman:
+    name:
+      - polkit
+      - hyprpolkitagent
+    state: present
