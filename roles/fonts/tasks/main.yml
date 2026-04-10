@@ -1,16 +1,7 @@
 ---
-- name: Install Liberation fonts (metric-compatible with Microsoft)
+- name: Install system fonts
   pacman:
-    name: ttf-liberation
+    name:
+      - ttf-liberation
+      - inter-font
     state: present
-
-- name: Install Inter font
-  pacman:
-    name: inter-font
-    state: present
-
-- name: Install Apple emoji font from AUR
-  shell: yay -S --noconfirm --needed ttf-apple-emoji
-  become_user: "{{ local_user }}"
-  register: result
-  changed_when: "'installing' in result.stdout"

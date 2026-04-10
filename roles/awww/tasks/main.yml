@@ -1,5 +1,0 @@
----
-- name: Install awww
-  pacman:
-    name: awww
-    state: present

@@ -1,5 +1,5 @@
 ---
-- name: System configuration
+- name: Personal applications
   hosts: localhost
   connection: local
   become: true
@@ -11,16 +11,8 @@
         that: local_user != ''
         fail_msg: "local_user is empty. Run with sudo, not as root directly."
   roles:
-    - aur-helper
-    - makepkg-optimization
-    - pacman-optimization
-    - system-tweaks
-    - nvidia
-    - audio
-    - bluetooth
-    - hyprland
-    - hyprland-ecosystem
-    - desktop-utils
-    - fonts
-    - theming
-    - shell
+    - matugen
+    - zen-browser
+    - screenshot
+    - battlenet
+    - fonts-personal

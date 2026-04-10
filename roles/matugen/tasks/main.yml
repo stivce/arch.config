@@ -1,0 +1,6 @@
+---
+- name: Install matugen from AUR
+  shell: yay -S --noconfirm --needed matugen-bin
+  become_user: "{{ local_user }}"
+  register: result
+  changed_when: "'installing' in result.stdout"

@@ -1,5 +1,0 @@
----
-- name: Install hypridle
-  pacman:
-    name: hypridle
-    state: present
