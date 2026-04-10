@@ -4,11 +4,14 @@
     name: ttf-liberation
     state: present
 
-- name: Install Apple fonts from AUR
+- name: Install Inter font
+  pacman:
+    name: inter-font
+    state: present
+
+- name: Install Apple emoji font from AUR
   kewlfft.aur.aur:
-    name:
-      - otf-apple-sf-pro
-      - ttf-apple-emoji
+    name: ttf-apple-emoji
     use: yay
     state: present
   become: true
