@@ -9,8 +9,7 @@
 - name: Find top-level dotfiles entries
   find:
     paths: "/home/{{ local_user }}/.dotfiles"
-    mindepth: 1
-    maxdepth: 1
+    depth: 1
     excludes: ".git"
     file_type: any
   register: dotfiles_entries
