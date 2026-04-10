@@ -1,5 +1,11 @@
 ---
-- name: Install Microsoft fonts
+- name: Install Liberation fonts (metric-compatible with Microsoft)
   pacman:
-    name: ttf-ms-fonts
+    name: ttf-liberation
     state: present
+
+- name: Install Microsoft fonts from AUR
+  command: >
+    cd /tmp && git clone https://aur.archlinux.org/ttf-ms-fonts.git && cd ttf-ms-fonts && makepkg -sic --noconfirm
+  args:
+    creates: /usr/share/fonts/ttf-ms-fonts
