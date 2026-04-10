@@ -4,17 +4,31 @@
     name: ccache
     state: present
 
-- name: Set native arch CFLAGS (replace multiline original)
-  replace:
-    path: /etc/makepkg.conf
-    regexp: '^#?CFLAGS=.*(\\\n.*)*'
-    replace: 'CFLAGS="-march=native -O2 -pipe -fno-plt -fexceptions -Wp,-D_FORTIFY_SOURCE=3 -Wformat -Werror=format-security -fstack-clash-protection -fcf-protection -fno-omit-frame-pointer -mno-omit-leaf-frame-pointer"'
+- name: Set native arch CFLAGS (handle multiline original)
+  shell: |
+    python3 - <<'EOF'
+    import re
+    with open('/etc/makepkg.conf', 'r') as f:
+        content = f.read()
+    new = 'CFLAGS="-march=native -O2 -pipe -fno-plt -fexceptions -Wp,-D_FORTIFY_SOURCE=3 -Wformat -Werror=format-security -fstack-clash-protection -fcf-protection -fno-omit-frame-pointer -mno-omit-leaf-frame-pointer"'
+    content = re.sub(r'^#?CFLAGS=.*?(?:\\\n.*?)*', new, content, flags=re.MULTILINE)
+    with open('/etc/makepkg.conf', 'w') as f:
+        f.write(content)
+    EOF
+  changed_when: false
 
-- name: Set CXXFLAGS to match CFLAGS
-  replace:
-    path: /etc/makepkg.conf
-    regexp: '^#?CXXFLAGS=.*(\\\n.*)*'
-    replace: 'CXXFLAGS="$CFLAGS -Wp,-D_GLIBCXX_ASSERTIONS"'
+- name: Set CXXFLAGS to match CFLAGS (handle multiline original)
+  shell: |
+    python3 - <<'EOF'
+    import re
+    with open('/etc/makepkg.conf', 'r') as f:
+        content = f.read()
+    new = 'CXXFLAGS="$CFLAGS -Wp,-D_GLIBCXX_ASSERTIONS"'
+    content = re.sub(r'^#?CXXFLAGS=.*?(?:\\\n.*?)*', new, content, flags=re.MULTILINE)
+    with open('/etc/makepkg.conf', 'w') as f:
+        f.write(content)
+    EOF
+  changed_when: false
 
 - name: Use all cores for compilation
   lineinfile:
@@ -45,3 +59,7 @@
     path: /etc/makepkg.conf
     regexp: '^#?PKGEXT='
     line: "PKGEXT='.pkg.tar.zst'"
+
+- name: Verify makepkg.conf syntax
+  command: bash -n /etc/makepkg.conf
+  changed_when: false
