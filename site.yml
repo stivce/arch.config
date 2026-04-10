@@ -8,12 +8,12 @@
     - hyprland
     - nvidia
     - kitty
-    - zsh
     - battlenet
 
-- name: Install system packages (fonts)
+- name: Install system packages
   hosts: localhost
   connection: local
   become: true
   roles:
     - fonts
+    - zsh
