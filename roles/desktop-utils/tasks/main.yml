@@ -10,3 +10,9 @@
       - thunar-volman
       - gvfs
     state: present
+
+- name: Install LocalSend from AUR
+  shell: yay -S --noconfirm --needed localsend-bin
+  become_user: "{{ local_user }}"
+  register: result
+  changed_when: "'installing' in result.stdout"
