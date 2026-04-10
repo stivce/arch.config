@@ -17,12 +17,6 @@
     mode: '0644'
   register: battlenet_installer
 
-- name: Install Battle.net via umu-launcher
-  command: >
-    umu-run {{ ansible_facts['user_dir'] }}/Games/Battle.net-Setup.exe
-  when: battlenet_installer.changed
-  changed_when: false
-
 - name: Clean up installer
   file:
     path: "{{ ansible_facts['user_dir'] }}/Games/Battle.net-Setup.exe"
