@@ -1,5 +1,6 @@
 ---
 - name: Install matugen from AUR
-  command: yay -S --noconfirm --needed matugen-bin
-  args:
-    creates: /usr/bin/matugen
+  shell: yay -S --noconfirm --needed matugen-bin
+  become_user: "{{ local_user }}"
+  register: result
+  changed_when: "'installing' in result.stdout"

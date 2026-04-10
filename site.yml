@@ -3,7 +3,13 @@
   hosts: localhost
   connection: local
   become: true
-  become_user: "{{ lookup('env', 'USER') }}"
+  vars:
+    local_user: "{{ lookup('env', 'SUDO_USER') | default('') }}"
+  pre_tasks:
+    - name: Ensure playbook is run with sudo
+      assert:
+        that: local_user != ''
+        fail_msg: "local_user is empty. Run the playbook with sudo (not as root directly), or pass -e local_user=<username>"
   roles:
     - yay
     - zen-browser
@@ -18,6 +24,8 @@
   hosts: localhost
   connection: local
   become: true
+  vars:
+    local_user: "{{ lookup('env', 'SUDO_USER') | default('') }}"
   roles:
     - fonts
     - zsh

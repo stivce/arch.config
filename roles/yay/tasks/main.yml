@@ -5,13 +5,13 @@
       - git
       - base-devel
     state: present
-  become_user: root
 
 - name: Clone yay AUR repository
   git:
     repo: https://aur.archlinux.org/yay.git
     dest: /tmp/yay
     update: true
+  become_user: "{{ local_user }}"
 
 - name: Build and install yay
   command:
@@ -19,3 +19,4 @@
     chdir: /tmp/yay
   args:
     creates: /usr/bin/yay
+  become_user: "{{ local_user }}"
