@@ -1,0 +1,10 @@
+---
+- name: Install NVIDIA drivers
+  pacman:
+    name: nvidia-dkms
+    state: present
+
+- name: Install NVIDIA utilities
+  pacman:
+    name: nvidia-settings
+    state: present
