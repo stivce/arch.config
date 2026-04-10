@@ -13,7 +13,7 @@
   hosts: localhost
   connection: local
   become: true
-  become_user: "{{ lookup('env', 'SUDO_USER') }}"
+  become_user: "{{ lookup('env', 'USER') }}"
   roles:
     - yay
     - zen-browser
