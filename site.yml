@@ -8,6 +8,7 @@
     - hyprland
     - nvidia
     - kitty
+    - zsh
     - battlenet
 
 - name: Install system packages (fonts)

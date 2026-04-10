@@ -1,0 +1,10 @@
+---
+- name: Install zsh
+  pacman:
+    name: zsh
+    state: present
+
+- name: Set zsh as default shell for sn0w
+  user:
+    name: sn0w
+    shell: /bin/zsh
