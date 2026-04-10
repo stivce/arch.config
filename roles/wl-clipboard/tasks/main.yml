@@ -1,0 +1,5 @@
+---
+- name: Install wl-clipboard
+  pacman:
+    name: wl-clipboard
+    state: present

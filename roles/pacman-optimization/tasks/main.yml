@@ -1,0 +1,41 @@
+---
+- name: Install reflector and pacman-contrib
+  pacman:
+    name:
+      - reflector
+      - pacman-contrib
+    state: present
+
+- name: Enable parallel downloads
+  lineinfile:
+    path: /etc/pacman.conf
+    regexp: '^#?ParallelDownloads'
+    line: 'ParallelDownloads = 5'
+
+- name: Enable Color output
+  lineinfile:
+    path: /etc/pacman.conf
+    regexp: '^#?Color'
+    line: 'Color'
+
+- name: Configure reflector
+  copy:
+    dest: /etc/xdg/reflector/reflector.conf
+    content: |
+      --save /etc/pacman.d/mirrorlist
+      --protocol https
+      --latest 10
+      --sort rate
+    mode: '0644'
+
+- name: Enable and start reflector timer
+  systemd:
+    name: reflector.timer
+    enabled: true
+    state: started
+
+- name: Enable paccache timer
+  systemd:
+    name: paccache.timer
+    enabled: true
+    state: started
