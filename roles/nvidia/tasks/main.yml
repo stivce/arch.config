@@ -1,5 +1,5 @@
 ---
-- name: Install NVIDIA drivers
+- name: Install NVIDIA drivers (RTX 40xx series)
   pacman:
     name: nvidia-dkms
     state: present
