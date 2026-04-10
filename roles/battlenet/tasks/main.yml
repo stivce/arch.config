@@ -3,3 +3,28 @@
   pacman:
     name: umu-launcher
     state: present
+
+- name: Create games directory
+  file:
+    path: "{{ ansible_user_dir }}/Games"
+    state: directory
+    mode: '0755'
+
+- name: Download Battle.net installer
+  get_url:
+    url: https://www.battle.net/download/getInstallerForGame?installer=Battle.net&channel=full
+    dest: /tmp/Battle.net-Setup.exe
+    mode: '0644'
+  register: battlenet_installer
+
+- name: Install Battle.net via umu-launcher
+  command: >
+    umu-run /tmp/Battle.net-Setup.exe
+  when: battlenet_installer.changed
+  changed_when: false
+
+- name: Clean up installer
+  file:
+    path: /tmp/Battle.net-Setup.exe
+    state: absent
+  when: battlenet_installer.changed
