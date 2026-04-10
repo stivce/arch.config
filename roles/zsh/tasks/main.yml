@@ -4,7 +4,7 @@
     name: zsh
     state: present
 
-- name: Set zsh as default shell for sn0w
+- name: Set zsh as default shell for current user
   user:
-    name: sn0w
+    name: "{{ ansible_env.SUDO_USER }}"
     shell: /bin/zsh
