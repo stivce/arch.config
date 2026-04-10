@@ -17,8 +17,3 @@
     https://downloader.battle.net/download/getInstaller?os=win&installer=Battle.net-Setup.exe
   args:
     creates: "{{ ansible_facts['user_dir'] }}/Games/Battle.net-Setup.exe"
-
-- name: Remove installer after install
-  file:
-    path: "{{ ansible_facts['user_dir'] }}/Games/Battle.net-Setup.exe"
-    state: absent
