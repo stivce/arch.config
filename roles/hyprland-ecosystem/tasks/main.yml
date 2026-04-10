@@ -1,0 +1,14 @@
+---
+- name: Install Hyprland ecosystem packages
+  pacman:
+    name:
+      - hyprlock
+      - hypridle
+      - xdg-desktop-portal-hyprland
+      - xdg-desktop-portal-gtk
+      - swaync
+      - awww
+      - polkit
+      - hyprpolkitagent
+      - kitty
+    state: present

@@ -1,6 +1,8 @@
 ---
-- name: Install matugen from AUR
-  shell: yay -S --noconfirm --needed matugen-bin
-  become_user: "{{ local_user }}"
-  register: result
-  changed_when: "'installing' in result.stdout"
+- name: Install GTK and Qt theming tools
+  pacman:
+    name:
+      - nwg-look
+      - qt5ct
+      - qt6ct
+    state: present

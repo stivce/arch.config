@@ -1,0 +1,6 @@
+---
+- name: Install Apple emoji font from AUR
+  shell: yay -S --noconfirm --needed ttf-apple-emoji
+  become_user: "{{ local_user }}"
+  register: result
+  changed_when: "'installing' in result.stdout"

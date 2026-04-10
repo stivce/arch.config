@@ -1,8 +1,0 @@
----
-- name: Install GTK and Qt theming tools
-  pacman:
-    name:
-      - nwg-look
-      - qt5ct
-      - qt6ct
-    state: present

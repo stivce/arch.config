@@ -6,5 +6,5 @@
 
 - name: Set zsh as default shell for current user
   user:
-    name: "{{ lookup('env', 'USER') }}"
+    name: "{{ local_user }}"
     shell: /bin/zsh

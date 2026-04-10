@@ -1,0 +1,12 @@
+---
+- name: Install desktop utility packages
+  pacman:
+    name:
+      - brightnessctl
+      - playerctl
+      - cliphist
+      - wl-clipboard
+      - thunar
+      - thunar-volman
+      - gvfs
+    state: present

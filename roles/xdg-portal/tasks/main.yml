@@ -1,7 +1,0 @@
----
-- name: Install xdg-desktop-portal-hyprland
-  pacman:
-    name:
-      - xdg-desktop-portal-hyprland
-      - xdg-desktop-portal-gtk
-    state: present

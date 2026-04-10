@@ -1,5 +1,0 @@
----
-- name: Install swaync
-  pacman:
-    name: swaync
-    state: present

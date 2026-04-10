@@ -1,5 +1,0 @@
----
-- name: Install playerctl
-  pacman:
-    name: playerctl
-    state: present

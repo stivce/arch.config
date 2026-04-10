@@ -1,8 +1,0 @@
----
-- name: Install Thunar
-  pacman:
-    name:
-      - thunar
-      - thunar-volman
-      - gvfs
-    state: present
