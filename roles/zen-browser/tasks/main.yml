@@ -1,0 +1,6 @@
+---
+- name: Install zen-browser from AUR
+  kewlfft.aur.aur:
+    name: zen-browser
+    use: yay
+    state: present

@@ -6,6 +6,7 @@
   become_user: sn0w
   roles:
     - yay
+    - zen-browser
     - hyprland
     - nvidia
     - kitty
