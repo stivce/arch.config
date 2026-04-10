@@ -8,5 +8,11 @@
     - hyprland
     - nvidia
     - kitty
-    - fonts
     - battlenet
+
+- name: Install system packages (fonts)
+  hosts: localhost
+  connection: local
+  become: true
+  roles:
+    - fonts
