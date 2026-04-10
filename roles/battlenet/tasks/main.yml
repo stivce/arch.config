@@ -3,9 +3,3 @@
   pacman:
     name: umu-launcher
     state: present
-
-- name: Install heroic-games-launcher
-  yay:
-    name: heroic-games-launcher
-    state: present
-  when: battlenet_install_heroic | bool
