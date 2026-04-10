@@ -5,3 +5,31 @@
     dest: "/home/{{ local_user }}/.dotfiles"
     update: true
   become_user: "{{ local_user }}"
+
+- name: Find top-level dotfiles entries
+  find:
+    paths: "/home/{{ local_user }}/.dotfiles"
+    mindepth: 1
+    maxdepth: 1
+    excludes: ".git"
+    file_type: any
+  register: dotfiles_entries
+
+- name: Remove conflicting files or directories at symlink targets
+  file:
+    path: "/home/{{ local_user }}/{{ item.path | basename }}"
+    state: absent
+  loop: "{{ dotfiles_entries.files }}"
+  when: >
+    (lookup('fileglob', '/home/' ~ local_user ~ '/' ~ (item.path | basename)) | length > 0)
+    and not (lookup('pipe', 'readlink /home/' ~ local_user ~ '/' ~ (item.path | basename) ~ ' 2>/dev/null') == item.path)
+
+- name: Create symlinks for dotfiles
+  file:
+    src: "{{ item.path }}"
+    dest: "/home/{{ local_user }}/{{ item.path | basename }}"
+    state: link
+    owner: "{{ local_user }}"
+    force: true
+  loop: "{{ dotfiles_entries.files }}"
+  become_user: "{{ local_user }}"
