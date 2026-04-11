@@ -12,5 +12,5 @@
       - hyprpolkitagent
       - kitty
       - waybar
-      - rofi-wayland
+      - wofi
     state: present
