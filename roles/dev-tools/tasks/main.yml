@@ -8,4 +8,5 @@
 
 - name: Install Claude Code
   shell: npm install -g @anthropic-ai/claude-code
-  changed_when: false
+  args:
+    creates: /usr/lib/node_modules/@anthropic-ai/claude-code/package.json
