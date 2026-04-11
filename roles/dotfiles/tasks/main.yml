@@ -1,7 +1,7 @@
 ---
 - name: Clone dotfiles repository
   git:
-    repo: https://gitlab.com/stivce-infrastructure/workstation/arch-meta/dotfiles.git
+    repo: https://github.com/stivce/arch.dot.git
     dest: "/home/{{ local_user }}/.dotfiles"
     update: true
   become_user: "{{ local_user }}"
