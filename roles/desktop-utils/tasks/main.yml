@@ -20,3 +20,4 @@
   loop:
     - localsend-bin
     - wowup-cf-bin
+    - helium-browser-beta-bin
