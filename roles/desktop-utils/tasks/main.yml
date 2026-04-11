@@ -9,6 +9,7 @@
       - thunar
       - thunar-volman
       - gvfs
+      - telegram-desktop
     state: present
 
 - name: Install AUR packages
