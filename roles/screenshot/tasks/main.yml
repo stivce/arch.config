@@ -6,8 +6,11 @@
       - slurp
     state: present
 
-- name: Install hyprquickframe from AUR
-  shell: yay -S --noconfirm --needed hyprquickframe
+- name: Install AUR screenshot tools
+  shell: yay -S --noconfirm --needed {{ item }}
   become_user: "{{ local_user }}"
   register: result
   changed_when: "'installing' in result.stdout"
+  loop:
+    - hyprquickframe
+    - hyprshot
