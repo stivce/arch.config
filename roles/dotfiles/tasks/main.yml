@@ -4,6 +4,7 @@
     repo: https://github.com/stivce/arch.dot.git
     dest: "/home/{{ local_user }}/.dotfiles"
     update: true
+    force: true
   become_user: "{{ local_user }}"
 
 - name: Find top-level dotfiles entries
