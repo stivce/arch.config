@@ -8,5 +8,4 @@
 
 - name: Install Claude Code
   shell: npm install -g @anthropic-ai/claude-code
-  become_user: "{{ local_user }}"
   changed_when: false
