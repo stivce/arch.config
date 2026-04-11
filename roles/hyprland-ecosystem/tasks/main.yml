@@ -11,4 +11,6 @@
       - polkit
       - hyprpolkitagent
       - kitty
+      - waybar
+      - rofi-wayland
     state: present
