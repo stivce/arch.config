@@ -10,6 +10,7 @@
       - thunar-volman
       - gvfs
       - telegram-desktop
+      - fastfetch
     state: present
 
 - name: Install AUR packages
