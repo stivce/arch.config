@@ -6,8 +6,7 @@
       - playerctl
       - cliphist
       - wl-clipboard
-      - thunar
-      - thunar-volman
+      - nautilus
       - gvfs
       - telegram-desktop
       - fastfetch
