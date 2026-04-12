@@ -10,3 +10,14 @@
   shell: npm install -g @anthropic-ai/claude-code
   args:
     creates: /usr/lib/node_modules/@anthropic-ai/claude-code/package.json
+
+- name: Install ollama
+  pacman:
+    name: ollama
+    state: present
+
+- name: Enable ollama service
+  systemd:
+    name: ollama.service
+    enabled: true
+    state: started
