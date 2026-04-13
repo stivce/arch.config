@@ -30,3 +30,7 @@
     owner: "{{ local_user }}"
   loop: "{{ dotfiles_entries.files }}"
   become_user: "{{ local_user }}"
+
+- name: Load dconf settings
+  shell: dconf load / < "/home/{{ local_user }}/.config/dconf/user"
+  become_user: "{{ local_user }}"
