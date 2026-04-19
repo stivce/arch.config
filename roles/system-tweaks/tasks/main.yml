@@ -38,7 +38,7 @@
 
 - name: Tune vm settings, enable tcp_bbr and hugepages
   copy:
-    dest: /etc/sysctl.d/99-desktop.conf
+    dest: /etc/sysctl.d/99-laptop.conf
     content: |
       vm.swappiness=10
       vm.vfs_cache_pressure=50
