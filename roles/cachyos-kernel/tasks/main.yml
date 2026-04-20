@@ -1,0 +1,125 @@
+---
+- name: Add CachyOS repository to pacman.conf
+  blockinfile:
+    path: /etc/pacman.conf
+    marker: "# {mark} CachyOS"
+    block: |
+      [cachyos]
+      Server = https://mirror.cachyos.org/repo/x86_64/$repo
+
+- name: Initialize CachyOS keyring
+  command: pacman-key --recv-key 882DCFE48E2051D48E2562ABF3B607488DB35A47 --keyserver keyserver.ubuntu.com
+  changed_when: false
+
+- name: Sign CachyOS key
+  command: pacman-key --lsign-key 882DCFE48E2051D48E2562ABF3B607488DB35A47
+  changed_when: false
+
+- name: Remove stale pacman lock
+  file:
+    path: /var/lib/pacman/db.lck
+    state: absent
+
+- name: Refresh pacman databases
+  command: pacman -Sy --noconfirm
+  changed_when: false
+
+- name: Install CachyOS kernel
+  pacman:
+    name:
+      - linux-cachyos
+      - linux-cachyos-headers
+    state: present
+
+- name: Get root UUID from /proc/cmdline
+  shell: grep -oP 'root=UUID=\K[^ ]+' /proc/cmdline
+  register: root_uuid
+  changed_when: false
+
+- name: Get extra kernel cmdline params
+  shell: |
+    cat /proc/cmdline | tr ' ' '\n' \
+      | grep -vE '^(BOOT_IMAGE=|root=|initrd=|$)' \
+      | tr '\n' ' ' | xargs
+  register: extra_params
+  changed_when: false
+
+- name: Find EFI mount point
+  shell: findmnt -n -o TARGET /boot/efi 2>/dev/null || findmnt -n -o TARGET /boot
+  register: efi_mount
+  changed_when: false
+
+- name: Find EFI partition device
+  shell: findmnt -n -o SOURCE "{{ efi_mount.stdout }}"
+  register: efi_device
+  changed_when: false
+
+- name: Parse EFI disk and partition number
+  shell: |
+    DEV="{{ efi_device.stdout }}"
+    if echo "$DEV" | grep -qP 'nvme\d+n\d+'; then
+      echo "$(echo "$DEV" | sed 's/p[0-9]*$//')"
+      echo "$(echo "$DEV" | grep -oP '(?<=p)[0-9]+$')"
+    else
+      echo "$(echo "$DEV" | sed 's/[0-9]*$//')"
+      echo "$(echo "$DEV" | grep -oP '[0-9]+$')"
+    fi
+  register: efi_disk_part_raw
+  changed_when: false
+
+- name: Set EFI disk and partition facts
+  set_fact:
+    efi_disk: "{{ efi_disk_part_raw.stdout_lines[0] }}"
+    efi_part: "{{ efi_disk_part_raw.stdout_lines[1] }}"
+
+- name: Copy kernel to EFI partition
+  copy:
+    src: /boot/vmlinuz-linux-cachyos
+    dest: "{{ efi_mount.stdout }}/vmlinuz-linux-cachyos"
+    remote_src: yes
+    mode: '0644'
+
+- name: Copy initramfs to EFI partition
+  copy:
+    src: /boot/initramfs-linux-cachyos.img
+    dest: "{{ efi_mount.stdout }}/initramfs-linux-cachyos.img"
+    remote_src: yes
+    mode: '0644'
+
+- name: Remove existing CachyOS EFI boot entries
+  shell: |
+    for BOOT in $(efibootmgr -v | grep 'CachyOS' | grep -oP 'Boot\K[0-9a-fA-F]+'); do
+      efibootmgr --delete-bootnum --bootnum "$BOOT"
+    done
+  changed_when: false
+  failed_when: false
+
+- name: Create CachyOS EFI boot entry
+  command: >
+    efibootmgr --create
+    --disk {{ efi_disk }}
+    --part {{ efi_part }}
+    --loader /vmlinuz-linux-cachyos
+    --label CachyOS
+    --unicode "root=UUID={{ root_uuid.stdout }} rw initrd=\initramfs-linux-cachyos.img {{ extra_params.stdout }}"
+  register: efi_result
+
+- name: Verify CachyOS EFI boot entry exists
+  shell: efibootmgr -v | grep -c CachyOS
+  register: efi_verify
+  changed_when: false
+  failed_when: efi_verify.stdout | int == 0
+
+- name: Set CachyOS as first boot option
+  shell: |
+    CACHYOS_BOOT=$(efibootmgr -v | grep 'CachyOS' | grep -oP 'Boot\K[0-9a-fA-F]+' | head -1)
+    CURRENT_ORDER=$(efibootmgr | grep 'BootOrder:' | awk '{print $2}')
+    NEW_ORDER="${CACHYOS_BOOT},$(echo $CURRENT_ORDER | tr ',' '\n' | grep -v $CACHYOS_BOOT | tr '\n' ',' | sed 's/,$//')"
+    efibootmgr -o "$NEW_ORDER"
+
+- name: Remove old Arch kernel packages
+  pacman:
+    name:
+      - linux
+      - linux-headers
+    state: absent

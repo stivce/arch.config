@@ -12,6 +12,7 @@
         fail_msg: "local_user is empty. Run with sudo, not as root directly."
   roles:
     - yay
+    - cachyos-kernel
     - boot-optimization
     - makepkg-optimization
     - pacman-optimization
