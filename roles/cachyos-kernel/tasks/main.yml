@@ -20,79 +20,95 @@
     path: /var/lib/pacman/db.lck
     state: absent
 
-- name: Refresh pacman databases
-  command: pacman -Sy --noconfirm
-  changed_when: false
-
 - name: Install CachyOS kernel
   pacman:
+    update_cache: true
     name:
       - linux-cachyos
       - linux-cachyos-headers
     state: present
 
-- name: Get root UUID from /proc/cmdline
-  shell: grep -oP 'root=UUID=\K[^ ]+' /proc/cmdline
-  register: root_uuid
+- name: Read kernel command line
+  slurp:
+    src: /proc/cmdline
+  register: proc_cmdline
   changed_when: false
 
-- name: Get extra kernel cmdline params
-  shell: |
-    cat /proc/cmdline | tr ' ' '\n' \
-      | grep -vE '^(BOOT_IMAGE=|root=|initrd=|$)' \
-      | tr '\n' ' ' | xargs
-  register: extra_params
-  changed_when: false
+- name: Parse kernel command line values
+  set_fact:
+    root_uuid: "{{ ((proc_cmdline.content | b64decode | trim) | regex_findall('root=UUID=([^ ]+)') | first | default('')) }}"
+    extra_params: >-
+      {{
+        ((proc_cmdline.content | b64decode | trim).split()
+        | reject('match', '^(BOOT_IMAGE=|root=|initrd=)')
+        | list)
+        | join(' ')
+      }}
 
-- name: Find EFI mount point
-  shell: findmnt -n -o TARGET /boot/efi 2>/dev/null || findmnt -n -o TARGET /boot
-  register: efi_mount
+- name: Ensure root UUID exists in current cmdline
+  assert:
+    that:
+      - root_uuid | length > 0
+    fail_msg: "Unable to determine root UUID from /proc/cmdline"
+
+- name: Find EFI mount point at /boot/efi
+  command: findmnt -n -o TARGET /boot/efi
+  register: efi_mount_efi
   changed_when: false
+  failed_when: false
+
+- name: Find EFI mount point at /boot when /boot/efi missing
+  command: findmnt -n -o TARGET /boot
+  register: efi_mount_boot
+  changed_when: false
+  failed_when: false
+  when: efi_mount_efi.rc != 0
+
+- name: Set EFI mount point fact
+  set_fact:
+    efi_mount: "{{ efi_mount_efi.stdout if efi_mount_efi.rc == 0 else efi_mount_boot.stdout }}"
+
+- name: Ensure EFI mount point was discovered
+  assert:
+    that:
+      - efi_mount | length > 0
+    fail_msg: "Unable to detect EFI mount point at /boot/efi or /boot"
 
 - name: Find EFI partition device
-  shell: findmnt -n -o SOURCE "{{ efi_mount.stdout }}"
+  command: findmnt -n -o SOURCE {{ efi_mount }}
   register: efi_device
-  changed_when: false
-
-- name: Parse EFI disk and partition number
-  shell: |
-    DEV="{{ efi_device.stdout }}"
-    if echo "$DEV" | grep -qP 'nvme\d+n\d+'; then
-      echo "$(echo "$DEV" | sed 's/p[0-9]*$//')"
-      echo "$(echo "$DEV" | grep -oP '(?<=p)[0-9]+$')"
-    else
-      echo "$(echo "$DEV" | sed 's/[0-9]*$//')"
-      echo "$(echo "$DEV" | grep -oP '[0-9]+$')"
-    fi
-  register: efi_disk_part_raw
   changed_when: false
 
 - name: Set EFI disk and partition facts
   set_fact:
-    efi_disk: "{{ efi_disk_part_raw.stdout_lines[0] }}"
-    efi_part: "{{ efi_disk_part_raw.stdout_lines[1] }}"
+    efi_disk: "{{ efi_device.stdout | regex_replace('p?[0-9]+$', '') }}"
+    efi_part: "{{ (efi_device.stdout | regex_findall('[0-9]+$') | first | default('')) }}"
+
+- name: Ensure EFI disk and partition parsing succeeded
+  assert:
+    that:
+      - efi_disk | length > 0
+      - efi_part | length > 0
+    fail_msg: "Unable to parse EFI disk/partition from {{ efi_device.stdout }}"
 
 - name: Copy kernel to EFI partition
   copy:
     src: /boot/vmlinuz-linux-cachyos
-    dest: "{{ efi_mount.stdout }}/vmlinuz-linux-cachyos"
+    dest: "{{ efi_mount }}/vmlinuz-linux-cachyos"
     remote_src: yes
     mode: '0644'
 
 - name: Copy initramfs to EFI partition
   copy:
     src: /boot/initramfs-linux-cachyos.img
-    dest: "{{ efi_mount.stdout }}/initramfs-linux-cachyos.img"
+    dest: "{{ efi_mount }}/initramfs-linux-cachyos.img"
     remote_src: yes
     mode: '0644'
 
-- name: Remove existing CachyOS EFI boot entries
-  shell: |
-    for BOOT in $(efibootmgr -v | grep 'CachyOS' | grep -oP 'Boot\K[0-9a-fA-F]+'); do
-      efibootmgr --delete-bootnum --bootnum "$BOOT"
-    done
+- name: Read current EFI boot entries
+  command: efibootmgr -v
+  register: efi_boot_entries
   changed_when: false
-  failed_when: false
 
 - name: Create CachyOS EFI boot entry
   command: >
@@ -101,21 +117,55 @@
     --part {{ efi_part }}
     --loader /vmlinuz-linux-cachyos
     --label CachyOS
-    --unicode "root=UUID={{ root_uuid.stdout }} rw initrd=\initramfs-linux-cachyos.img {{ extra_params.stdout }}"
+    --unicode "root=UUID={{ root_uuid }} rw initrd=\initramfs-linux-cachyos.img {{ extra_params }}"
   register: efi_result
+  when: "'CachyOS' not in efi_boot_entries.stdout"
 
-- name: Verify CachyOS EFI boot entry exists
-  shell: efibootmgr -v | grep -c CachyOS
-  register: efi_verify
+- name: Re-read EFI boot entries
+  command: efibootmgr -v
+  register: efi_boot_entries_after
   changed_when: false
-  failed_when: efi_verify.stdout | int == 0
+
+- name: Ensure CachyOS EFI boot entry exists
+  assert:
+    that:
+      - "'CachyOS' in efi_boot_entries_after.stdout"
+    fail_msg: "CachyOS EFI boot entry was not found after creation"
+
+- name: Determine CachyOS boot number
+  set_fact:
+    cachyos_bootnum: "{{ (efi_boot_entries_after.stdout | regex_findall('Boot([0-9A-Fa-f]{4})\\*?\\s+CachyOS') | first | default('')) }}"
+
+- name: Read current EFI boot order
+  command: efibootmgr
+  register: efi_boot_order
+  changed_when: false
+
+- name: Build desired EFI boot order
+  set_fact:
+    current_boot_order: "{{ (efi_boot_order.stdout | regex_findall('BootOrder:\\s*([0-9A-Fa-f,]+)') | first | default('')) }}"
+
+- name: Build desired EFI boot order value
+  set_fact:
+    desired_boot_order: >-
+      {{
+        ([cachyos_bootnum] +
+        (current_boot_order.split(',')
+        | reject('equalto', cachyos_bootnum)
+        | list))
+        | reject('equalto', '')
+        | join(',')
+      }}
+
+- name: Ensure CachyOS boot number was parsed
+  assert:
+    that:
+      - cachyos_bootnum | length > 0
+    fail_msg: "Unable to parse CachyOS boot number from efibootmgr output"
 
 - name: Set CachyOS as first boot option
-  shell: |
-    CACHYOS_BOOT=$(efibootmgr -v | grep 'CachyOS' | grep -oP 'Boot\K[0-9a-fA-F]+' | head -1)
-    CURRENT_ORDER=$(efibootmgr | grep 'BootOrder:' | awk '{print $2}')
-    NEW_ORDER="${CACHYOS_BOOT},$(echo $CURRENT_ORDER | tr ',' '\n' | grep -v $CACHYOS_BOOT | tr '\n' ',' | sed 's/,$//')"
-    efibootmgr -o "$NEW_ORDER"
+  command: efibootmgr -o {{ desired_boot_order }}
+  when: desired_boot_order | length > 0 and current_boot_order != desired_boot_order
 
 - name: Remove old Arch kernel packages
   pacman:

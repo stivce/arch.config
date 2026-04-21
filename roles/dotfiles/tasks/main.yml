@@ -16,11 +16,46 @@
     hidden: true
   register: dotfiles_entries
 
-- name: Remove conflicting files or directories at symlink targets
-  file:
+- name: Set backup directory for pre-existing dotfiles targets
+  set_fact:
+    dotfiles_backup_dir: "/home/{{ local_user }}/.dotfiles-backup-{{ lookup('pipe', 'date +%Y%m%d%H%M%S') }}"
+
+- name: Collect existing target metadata
+  stat:
     path: "/home/{{ local_user }}/{{ item.path | basename }}"
-    state: absent
+    follow: false
   loop: "{{ dotfiles_entries.files }}"
+  register: dotfiles_target_stats
+
+- name: Create backup directory when existing non-symlink targets are found
+  file:
+    path: "{{ dotfiles_backup_dir }}"
+    state: directory
+    owner: "{{ local_user }}"
+    group: "{{ local_user }}"
+    mode: '0755'
+  when: dotfiles_target_stats.results | selectattr('stat.exists') | rejectattr('stat.islnk') | list | length > 0
+
+- name: Backup existing non-symlink targets
+  command:
+    argv:
+      - mv
+      - "{{ item.stat.path }}"
+      - "{{ dotfiles_backup_dir }}/"
+  loop: "{{ dotfiles_target_stats.results }}"
+  when:
+    - item.stat.exists
+    - not (item.stat.islnk | default(false))
+  become_user: "{{ local_user }}"
+
+- name: Remove existing symlink targets before relinking
+  file:
+    path: "{{ item.stat.path }}"
+    state: absent
+  loop: "{{ dotfiles_target_stats.results }}"
+  when:
+    - item.stat.exists
+    - item.stat.islnk | default(false)
 
 - name: Create symlinks for dotfiles
   file:
@@ -28,5 +63,6 @@
     dest: "/home/{{ local_user }}/{{ item.path | basename }}"
     state: link
     owner: "{{ local_user }}"
+    force: true
   loop: "{{ dotfiles_entries.files }}"
   become_user: "{{ local_user }}"
