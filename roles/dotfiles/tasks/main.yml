@@ -3,9 +3,125 @@
   git:
     repo: https://github.com/stivce/arch.dot.git
     dest: "/home/{{ local_user }}/.dotfiles"
+    version: blade
     update: true
     force: true
   become_user: "{{ local_user }}"
+
+- name: Check active dotfiles branch
+  command: git -C /home/{{ local_user }}/.dotfiles rev-parse --abbrev-ref HEAD
+  register: dotfiles_branch
+  changed_when: false
+  become_user: "{{ local_user }}"
+
+- name: Ensure dotfiles branch is blade
+  assert:
+    that:
+      - dotfiles_branch.stdout == 'blade'
+    fail_msg: "Dotfiles branch is {{ dotfiles_branch.stdout }}, expected blade"
+
+- name: Ensure Waybar battery module is present in blade dotfiles
+  slurp:
+    src: "/home/{{ local_user }}/.dotfiles/.config/waybar/config.jsonc"
+  register: waybar_config_raw
+  become_user: "{{ local_user }}"
+
+- name: Validate Waybar battery module config
+  assert:
+    that:
+      - (waybar_config_raw.content | b64decode) is regex('"modules-right"\\s*:\\s*\\[[^\\]]*"custom/battery"')
+      - (waybar_config_raw.content | b64decode) is regex('"custom/battery"\\s*:\\s*\\{')
+    fail_msg: "Waybar battery module is missing from .dotfiles/.config/waybar/config.jsonc"
+
+- name: Persist battery script compatibility across battery device names
+  copy:
+    dest: "/home/{{ local_user }}/.dotfiles/.config/waybar/scripts/battery.sh"
+    mode: '0755'
+    content: |
+      #!/usr/bin/env bash
+      set -euo pipefail
+
+      battery_path="$(upower -e | awk '/battery_/ {print; exit}')"
+
+      if [ -z "${battery_path}" ]; then
+        exit 0
+      fi
+
+      battery_info="$(upower -i "${battery_path}")"
+      percentage="$(printf '%s\n' "${battery_info}" | awk '/percentage:/ {print $2; exit}')"
+      state="$(printf '%s\n' "${battery_info}" | awk '/state:/ {print $2; exit}')"
+
+      if [ -z "${percentage}" ]; then
+        exit 0
+      fi
+
+      case "${state}" in
+        charging)
+          printf '⚡ %s\n' "${percentage}"
+          ;;
+        fully-charged)
+          printf '🔌 %s\n' "${percentage}"
+          ;;
+        *)
+          printf '🔋 %s\n' "${percentage}"
+          ;;
+      esac
+  become_user: "{{ local_user }}"
+
+- name: Persist Inter font stack in UI dotfiles
+  lineinfile:
+    path: "/home/{{ local_user }}/.dotfiles/{{ item }}"
+    regexp: '^\s*font-family:.*$'
+    line: '    font-family: "Inter Variable", "Inter", sans-serif;'
+  loop:
+    - .config/waybar/colors.css
+    - .config/wofi/style.css
+    - .config/matugen/templates/waybar.css
+    - .config/matugen/templates/wofi.css
+  become_user: "{{ local_user }}"
+
+- name: Read Inter font source files from dotfiles repo
+  slurp:
+    src: "/home/{{ local_user }}/.dotfiles/{{ item.path }}"
+  loop:
+    - { path: '.config/waybar/colors.css', regex: 'font-family:\\s*"Inter Variable",\\s*"Inter",\\s*sans-serif;' }
+    - { path: '.config/wofi/style.css', regex: 'font-family:\\s*"Inter Variable",\\s*"Inter",\\s*sans-serif;' }
+    - { path: '.config/matugen/templates/waybar.css', regex: 'font-family:\\s*"Inter Variable",\\s*"Inter",\\s*sans-serif;' }
+    - { path: '.config/matugen/templates/wofi.css', regex: 'font-family:\\s*"Inter Variable",\\s*"Inter",\\s*sans-serif;' }
+  register: dotfiles_font_files
+  become_user: "{{ local_user }}"
+
+- name: Ensure Inter font stack is present in UI dotfiles
+  assert:
+    that:
+      - (item.content | b64decode) is regex(item.item.regex)
+    fail_msg: "Inter font stack check failed for {{ item.item.path }}"
+  loop: "{{ dotfiles_font_files.results }}"
+  loop_control:
+    label: "{{ item.item.path }}"
+
+- name: Read 2K scaling source files from dotfiles repo
+  slurp:
+    src: "/home/{{ local_user }}/.dotfiles/{{ item.path }}"
+  loop:
+    - { path: '.config/hypr/hyprland/monitors.conf', regex: '2560x1440@' }
+    - { path: '.config/waybar/colors.css', regex: 'font-size:\\s*12px;' }
+    - { path: '.config/wofi/style.css', regex: 'font-size:\\s*12px;' }
+    - { path: '.config/swaync/style.css', regex: '--font-size-body:\\s*9px;' }
+    - { path: '.config/swaync/style.css', regex: '--font-size-summary:\\s*10px;' }
+    - { path: '.config/matugen/templates/waybar.css', regex: 'font-size:\\s*12px;' }
+    - { path: '.config/matugen/templates/wofi.css', regex: 'font-size:\\s*12px;' }
+  register: dotfiles_scaling_files
+  become_user: "{{ local_user }}"
+
+- name: Ensure dotfiles contain 2K scaling values
+  assert:
+    that:
+      - (item.content | b64decode) is regex(item.item.regex)
+    fail_msg: "2K scaling check failed for {{ item.item.path }} with pattern {{ item.item.regex }}"
+  loop: "{{ dotfiles_scaling_files.results }}"
+  loop_control:
+    label: "{{ item.item.path }}"
 
 - name: Find top-level dotfiles entries
   find:
