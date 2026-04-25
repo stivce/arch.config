@@ -1,0 +1,13 @@
+---
+hypridle_lock_cmd: "~/.config/hypr/start-hyprlock"
+hypridle_before_sleep_cmd: "loginctl lock-session"
+hypridle_after_sleep_cmd: "hyprctl dispatch dpms on"
+hypridle_lock_timeout_seconds: 300
+hypridle_dpms_timeout_seconds: 600
+hypridle_dpms_off_cmd: "hyprctl dispatch dpms off"
+hypridle_dpms_on_cmd: "hyprctl dispatch dpms on"
+hypridle_skip_on_ac_power: true
+hypridle_start_retries: 20
+hypridle_start_retry_delay_seconds: 0.25
+hypridle_start_fallback_delay_seconds: 2
+hypridle_verbose_logging: true

@@ -1,0 +1,63 @@
+#!/usr/bin/env bash
+set -euo pipefail
+
+log_file="${HOME}/.cache/hypridle.log"
+
+on_ac_power() {
+  local ac_path battery_path status battery_status
+
+  for ac_path in /sys/class/power_supply/AC*/online /sys/class/power_supply/ADP*/online /sys/class/power_supply/Mains*/online; do
+    [ -r "${ac_path}" ] || continue
+    read -r status < "${ac_path}" || continue
+    [ "${status}" = "1" ] && return 0
+  done
+
+  for battery_path in /sys/class/power_supply/BAT*; do
+    [ -r "${battery_path}/status" ] || continue
+    read -r battery_status < "${battery_path}/status" || continue
+    case "${battery_status}" in
+      Charging|Full)
+        return 0
+        ;;
+    esac
+  done
+
+  if command -v upower >/dev/null 2>&1; then
+    battery_path="$(upower -e 2>/dev/null | awk '/battery_/ {print; exit}')"
+    if [ -n "${battery_path}" ]; then
+      battery_status="$(upower -i "${battery_path}" 2>/dev/null | awk '/state:/ {print $2; exit}')"
+      case "${battery_status}" in
+        charging|fully-charged)
+          return 0
+          ;;
+      esac
+    fi
+  fi
+
+  return 1
+}
+
+command -v hypridle >/dev/null 2>&1 || exit 0
+
+{% if hypridle_skip_on_ac_power | bool %}
+# Keep the session unlocked and skip hypridle while charging.
+on_ac_power && exit 0
+{% endif %}
+
+pgrep -x hypridle >/dev/null 2>&1 && exit 0
+
+mkdir -p "${HOME}/.cache"
+runtime_dir="${XDG_RUNTIME_DIR:-/run/user/$(id -u)}"
+sig="${HYPRLAND_INSTANCE_SIGNATURE:-}"
+
+if [ -n "${sig}" ]; then
+  socket_path="${runtime_dir}/hypr/${sig}/.socket.sock"
+  for _ in $(seq 1 {{ hypridle_start_retries }}); do
+    [ -S "${socket_path}" ] && break
+    sleep {{ hypridle_start_retry_delay_seconds }}
+  done
+else
+  sleep {{ hypridle_start_fallback_delay_seconds }}
+fi
+
+exec hypridle --config "${HOME}/.config/hypr/hypridle.conf"{% if hypridle_verbose_logging | bool %} --verbose{% endif %} >> "${log_file}" 2>&1

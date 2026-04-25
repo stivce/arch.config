@@ -18,7 +18,7 @@
 
 - name: Enable nvidia-persistenced for reduced GPU init latency
   systemd:
-    name: nvidia-persistenced
+    name: nvidia-persistenced.service
     enabled: true
 
 - name: Enable nvidia suspend/resume/hibernate services

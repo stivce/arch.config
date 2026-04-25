@@ -1,6 +1,11 @@
 ---
+- name: Check whether matugen is installed
+  command: pacman -Q matugen-bin
+  register: matugen_query
+  changed_when: false
+  failed_when: false
+
 - name: Install matugen from AUR
-  shell: yay -S --noconfirm --needed matugen-bin
+  command: yay -S --noconfirm --needed matugen-bin
   become_user: "{{ local_user }}"
-  register: result
-  changed_when: "'installing' in result.stdout"
+  when: matugen_query.rc != 0

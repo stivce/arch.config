@@ -116,10 +116,10 @@
     --disk {{ efi_disk }}
     --part {{ efi_part }}
     --loader /vmlinuz-linux-cachyos
-    --label CachyOS
+    --label arch-meta
     --unicode "root=UUID={{ root_uuid }} rw initrd=\initramfs-linux-cachyos.img {{ extra_params }}"
   register: efi_result
-  when: "'CachyOS' not in efi_boot_entries.stdout"
+  when: "'arch-meta' not in efi_boot_entries.stdout"
 
 - name: Re-read EFI boot entries
   command: efibootmgr -v
@@ -129,12 +129,12 @@
 - name: Ensure CachyOS EFI boot entry exists
   assert:
     that:
-      - "'CachyOS' in efi_boot_entries_after.stdout"
-    fail_msg: "CachyOS EFI boot entry was not found after creation"
+      - "'arch-meta' in efi_boot_entries_after.stdout"
+    fail_msg: "arch-meta EFI boot entry was not found after creation"
 
 - name: Determine CachyOS boot number
   set_fact:
-    cachyos_bootnum: "{{ (efi_boot_entries_after.stdout | regex_findall('Boot([0-9A-Fa-f]{4})\\*?\\s+CachyOS') | first | default('')) }}"
+    cachyos_bootnum: "{{ (efi_boot_entries_after.stdout | regex_findall('Boot([0-9A-Fa-f]{4})\\*?\\s+arch-meta') | first | default('')) }}"
 
 - name: Read current EFI boot order
   command: efibootmgr

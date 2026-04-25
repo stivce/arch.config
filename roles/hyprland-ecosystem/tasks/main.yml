@@ -10,7 +10,67 @@
       - awww
       - polkit
       - hyprpolkitagent
+      - upower
       - kitty
       - waybar
       - wofi
     state: present
+
+- name: Ensure UPower daemon is enabled and running
+  systemd:
+    name: upower.service
+    enabled: true
+    state: started
+
+- name: Ensure Hypr config directories exist
+  file:
+    path: "/home/{{ local_user }}/{{ item }}"
+    state: directory
+    mode: '0755'
+  loop:
+    - .config/hypr
+    - .config/hypr/scripts
+    - .config/hypr/hyprland
+  become_user: "{{ local_user }}"
+
+- name: Deploy Hyprlock launcher script
+  template:
+    src: start-hyprlock.sh.j2
+    dest: "/home/{{ local_user }}/.config/hypr/start-hyprlock"
+    mode: '0755'
+  become_user: "{{ local_user }}"
+
+- name: Deploy Hypridle configuration
+  template:
+    src: hypridle.conf.j2
+    dest: "/home/{{ local_user }}/.config/hypr/hypridle.conf"
+    mode: '0644'
+  become_user: "{{ local_user }}"
+
+- name: Deploy Hypridle launcher script
+  template:
+    src: start-hypridle.sh.j2
+    dest: "/home/{{ local_user }}/.config/hypr/scripts/start-hypridle.sh"
+    mode: '0755'
+  become_user: "{{ local_user }}"
+
+- name: Remove legacy hypridle autostart commands
+  lineinfile:
+    path: "/home/{{ local_user }}/.config/hypr/hyprland/autostart.conf"
+    regexp: "{{ item }}"
+    state: absent
+    create: true
+  loop:
+    - '^exec-once\s*=\s*bash -c ''pgrep -x hypridle \|\| hypridle''\s*$'
+    - '^exec-once\s*=\s*hypridle(\s+.*)?$'
+    - '^exec\s*=\s*hypridle(\s+.*)?$'
+  become_user: "{{ local_user }}"
+
+- name: Manage hypridle autostart block
+  blockinfile:
+    path: "/home/{{ local_user }}/.config/hypr/hyprland/autostart.conf"
+    create: true
+    marker: "# {mark} ANSIBLE MANAGED HYPRIDLE"
+    block: |
+      exec-once = ~/.config/hypr/scripts/start-hypridle.sh
+  become_user: "{{ local_user }}"

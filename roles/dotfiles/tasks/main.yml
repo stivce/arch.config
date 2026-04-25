@@ -68,6 +68,146 @@
       esac
   become_user: "{{ local_user }}"
 
+- name: Ensure Wofi scripts directory exists in dotfiles
+  file:
+    path: "/home/{{ local_user }}/.dotfiles/.config/wofi/scripts"
+    state: directory
+    mode: '0755'
+  become_user: "{{ local_user }}"
+
+- name: Persist Wofi power menu script in dotfiles
+  copy:
+    dest: "/home/{{ local_user }}/.dotfiles/.config/wofi/scripts/powermenu.sh"
+    mode: '0755'
+    content: |
+      #!/usr/bin/env bash
+      set -euo pipefail
+
+      choice="$(printf '%s\n' lock poweroff reboot suspend | wofi --dmenu --prompt 'Power')"
+
+      case "${choice}" in
+        lock)
+          if [ -x "${HOME}/.config/hypr/start-hyprlock" ]; then
+            "${HOME}/.config/hypr/start-hyprlock"
+          elif [ -x "${HOME}/.config/hypr/scripts/hyprlock.sh" ]; then
+            "${HOME}/.config/hypr/scripts/hyprlock.sh"
+          else
+            hyprlock
+          fi
+          ;;
+        poweroff)
+          systemctl poweroff
+          ;;
+        reboot)
+          systemctl reboot
+          ;;
+        suspend)
+          systemctl suspend
+          ;;
+      esac
+  become_user: "{{ local_user }}"
+
+- name: Persist Wofi CPU power profile menu script in dotfiles
+  copy:
+    dest: "/home/{{ local_user }}/.dotfiles/.config/wofi/scripts/cpu-power-menu.sh"
+    mode: '0755'
+    content: |
+      #!/usr/bin/env bash
+      set -euo pipefail
+
+      if ! command -v powerprofilesctl >/dev/null 2>&1; then
+        command -v notify-send >/dev/null 2>&1 && notify-send -a 'CPU Power Menu' 'Power profile error' 'powerprofilesctl is not installed' >/dev/null 2>&1 || true
+        exit 1
+      fi
+
+      if [ "$#" -gt 0 ]; then
+        choice="${1}"
+      else
+        # Desktop launch via wofi --show drun can race with another wofi instance.
+        # Short delay avoids intermittent empty selection/menu spawn failures.
+        sleep 0.2
+        choice="$(printf '%s\n' power-saver balanced performance | wofi --dmenu --prompt 'CPU Power')"
+      fi
+
+      [ -n "${choice}" ] || exit 0
+
+      case "${choice}" in
+        power-saver|balanced|performance)
+          if powerprofilesctl set "${choice}" >/dev/null 2>&1; then
+            active_profile="$(powerprofilesctl get 2>/dev/null || printf '%s' "${choice}")"
+            command -v notify-send >/dev/null 2>&1 && notify-send -a 'CPU Power Menu' 'Power profile changed' "Active: ${active_profile}" >/dev/null 2>&1 || true
+          else
+            command -v notify-send >/dev/null 2>&1 && notify-send -a 'CPU Power Menu' 'Power profile error' "Failed to set: ${choice}" >/dev/null 2>&1 || true
+            exit 1
+          fi
+          ;;
+        *)
+          command -v notify-send >/dev/null 2>&1 && notify-send -a 'CPU Power Menu' 'Power profile error' "Unknown option: ${choice}" >/dev/null 2>&1 || true
+          exit 1
+          ;;
+      esac
+  become_user: "{{ local_user }}"
+
+- name: Ensure desktop applications directory exists in dotfiles
+  file:
+    path: "/home/{{ local_user }}/.dotfiles/.local/share/applications"
+    state: directory
+    mode: '0755'
+  become_user: "{{ local_user }}"
+
+- name: Persist CPU power menu desktop launcher in dotfiles
+  copy:
+    dest: "/home/{{ local_user }}/.dotfiles/.local/share/applications/cpu-power-menu.desktop"
+    mode: '0644'
+    content: |
+      [Desktop Entry]
+      Type=Application
+      Version=1.0
+      Name=CPU Power Menu
+      Comment=Select power profile with Wofi
+      Exec=/home/{{ local_user }}/.config/wofi/scripts/cpu-power-menu.sh
+      Terminal=false
+      Categories=System;Settings;
+      Keywords=cpu;power;profile;performance;balanced;power-saver;
+      StartupNotify=false
+  become_user: "{{ local_user }}"
+
+- name: Remove direct hyprpolkitagent autostart to avoid portal startup noise
+  lineinfile:
+    path: "/home/{{ local_user }}/.dotfiles/.config/hypr/hyprland/autostart.conf"
+    regexp: '^exec-once\s*=\s*(systemctl --user start hyprpolkitagent|bash -c ''systemctl --user start hyprpolkitagent >/dev/null 2>&1 \|\| true'')\s*$'
+    state: absent
+  become_user: "{{ local_user }}"
+
+- name: Check available Hyprland keybind config candidates
+  stat:
+    path: "/home/{{ local_user }}/.dotfiles/{{ item }}"
+  loop:
+    - .config/hypr/hyprland/keybinds.conf
+    - .config/hypr/hyprland/keybindings.conf
+    - .config/hypr/hyprland/binds.conf
+    - .config/hypr/hyprland.conf
+  register: hypr_keybind_candidates
+  become_user: "{{ local_user }}"
+
+- name: Set Hyprland keybind config path
+  set_fact:
+    hypr_keybind_config_path: "{{ (hypr_keybind_candidates.results | selectattr('stat.exists') | map(attribute='item') | list | first) | default('') }}"
+
+- name: Ensure Hyprland keybind config was found
+  assert:
+    that:
+      - hypr_keybind_config_path != ''
+    fail_msg: "Could not find a Hyprland keybind config in dotfiles"
+
+- name: Persist Mod+Escape Wofi power menu keybind in Hyprland dotfiles
+  lineinfile:
+    path: "/home/{{ local_user }}/.dotfiles/{{ hypr_keybind_config_path }}"
+    regexp: '^\s*bind\s*=\s*\$mainMod\s*,\s*Escape\s*,\s*exec\s*,\s*~/.config/wofi/scripts/powermenu\.sh\s*$'
+    line: 'bind = $mainMod, Escape, exec, ~/.config/wofi/scripts/powermenu.sh'
+    insertafter: EOF
+  become_user: "{{ local_user }}"
+
 - name: Persist Inter font stack in UI dotfiles
   lineinfile:
     path: "/home/{{ local_user }}/.dotfiles/{{ item }}"
@@ -84,17 +224,17 @@
   slurp:
     src: "/home/{{ local_user }}/.dotfiles/{{ item.path }}"
   loop:
-    - { path: '.config/waybar/colors.css', regex: 'font-family:\\s*"Inter Variable",\\s*"Inter",\\s*sans-serif;' }
-    - { path: '.config/wofi/style.css', regex: 'font-family:\\s*"Inter Variable",\\s*"Inter",\\s*sans-serif;' }
-    - { path: '.config/matugen/templates/waybar.css', regex: 'font-family:\\s*"Inter Variable",\\s*"Inter",\\s*sans-serif;' }
-    - { path: '.config/matugen/templates/wofi.css', regex: 'font-family:\\s*"Inter Variable",\\s*"Inter",\\s*sans-serif;' }
+    - { path: '.config/waybar/colors.css', regex: 'font-family:\s*"Inter Variable",\s*"Inter",\s*sans-serif;' }
+    - { path: '.config/wofi/style.css', regex: 'font-family:\s*"Inter Variable",\s*"Inter",\s*sans-serif;' }
+    - { path: '.config/matugen/templates/waybar.css', regex: 'font-family:\s*"Inter Variable",\s*"Inter",\s*sans-serif;' }
+    - { path: '.config/matugen/templates/wofi.css', regex: 'font-family:\s*"Inter Variable",\s*"Inter",\s*sans-serif;' }
   register: dotfiles_font_files
   become_user: "{{ local_user }}"
 
 - name: Ensure Inter font stack is present in UI dotfiles
   assert:
     that:
-      - (item.content | b64decode) is regex(item.item.regex)
+      - (item.content | b64decode | regex_search(item.item.regex)) is not none
     fail_msg: "Inter font stack check failed for {{ item.item.path }}"
   loop: "{{ dotfiles_font_files.results }}"
   loop_control:
@@ -105,19 +245,19 @@
     src: "/home/{{ local_user }}/.dotfiles/{{ item.path }}"
   loop:
     - { path: '.config/hypr/hyprland/monitors.conf', regex: '2560x1440@' }
-    - { path: '.config/waybar/colors.css', regex: 'font-size:\\s*12px;' }
-    - { path: '.config/wofi/style.css', regex: 'font-size:\\s*12px;' }
-    - { path: '.config/swaync/style.css', regex: '--font-size-body:\\s*9px;' }
-    - { path: '.config/swaync/style.css', regex: '--font-size-summary:\\s*10px;' }
-    - { path: '.config/matugen/templates/waybar.css', regex: 'font-size:\\s*12px;' }
-    - { path: '.config/matugen/templates/wofi.css', regex: 'font-size:\\s*12px;' }
+    - { path: '.config/waybar/colors.css', regex: 'font-size:\s*12px;' }
+    - { path: '.config/wofi/style.css', regex: 'font-size:\s*12px;' }
+    - { path: '.config/swaync/style.css', regex: '--font-size-body:\s*9px;' }
+    - { path: '.config/swaync/style.css', regex: '--font-size-summary:\s*10px;' }
+    - { path: '.config/matugen/templates/waybar.css', regex: 'font-size:\s*12px;' }
+    - { path: '.config/matugen/templates/wofi.css', regex: 'font-size:\s*12px;' }
   register: dotfiles_scaling_files
   become_user: "{{ local_user }}"
 
 - name: Ensure dotfiles contain 2K scaling values
   assert:
     that:
-      - (item.content | b64decode) is regex(item.item.regex)
+      - (item.content | b64decode | regex_search(item.item.regex)) is not none
     fail_msg: "2K scaling check failed for {{ item.item.path }} with pattern {{ item.item.regex }}"
   loop: "{{ dotfiles_scaling_files.results }}"
   loop_control:

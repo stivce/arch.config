@@ -1,20 +1,14 @@
 ---
 - name: System configuration
-  hosts: localhost
-  connection: local
+  hosts: local
   become: true
   vars:
-    local_user: "{{ lookup('env', 'SUDO_USER') | default('') }}"
-  pre_tasks:
-    - name: Ensure playbook is run with sudo
-      assert:
-        that: local_user != ''
-        fail_msg: "local_user is empty. Run with sudo, not as root directly."
+    local_user: "{{ ansible_user }}"
   roles:
+    - makepkg-optimization
     - yay
     - cachyos-kernel
     - boot-optimization
-    - makepkg-optimization
     - pacman-optimization
     - system-tweaks
     - nvidia
@@ -22,6 +16,8 @@
     - bluetooth
     - hyprland
     - hyprland-ecosystem
+    - hybrid-power
+    - system-health-remediation
     - desktop-utils
     - fonts
     - theming

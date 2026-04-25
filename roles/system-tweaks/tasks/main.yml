@@ -19,16 +19,26 @@
   copy:
     dest: /etc/udev/rules.d/60-ioscheduler.rules
     content: |
-      ACTION=="add|change", KERNEL=="nvme[0-9]*", ATTR{queue/scheduler}="none"
-      ACTION=="add|change", KERNEL=="sd[a-z]|hd[a-z]", ATTR{queue/rotational}=="0", ATTR{queue/scheduler}="mq-deadline"
+      ACTION=="add|change", SUBSYSTEM=="block", KERNEL=="nvme[0-9]n[0-9]", ATTR{queue/scheduler}="none"
+      ACTION=="add|change", SUBSYSTEM=="block", KERNEL=="sd[a-z]", ATTR{queue/rotational}=="0", ATTR{queue/scheduler}="mq-deadline"
     mode: '0644'
+  notify: Reload udev scheduler rules
 
-- name: Set CPU frequency governor to schedutil
+- name: Configure cpupower governor to schedutil
   copy:
-    dest: /etc/tmpfiles.d/cpu-governor.conf
+    dest: /etc/default/cpupower
     content: |
-      w /sys/devices/system/cpu/cpu*/cpufreq/scaling_governor - - - - schedutil
+      # Managed by Ansible
+      governor='schedutil'
+      min_freq='0'
+      max_freq='0'
     mode: '0644'
+  notify: Restart cpupower
+
+- name: Remove legacy tmpfiles CPU governor rule
+  file:
+    path: /etc/tmpfiles.d/cpu-governor.conf
+    state: absent
 
 - name: Cap journald log size
   lineinfile:
@@ -42,8 +52,6 @@
     content: |
       vm.swappiness=10
       vm.vfs_cache_pressure=50
-      # Transparent hugepages — madvise avoids wasting memory vs always
-      kernel.transparent_hugepage=madvise
       # TCP BBR congestion control + fq for better throughput/latency
       net.core.default_qdisc=fq
       net.ipv4.tcp_congestion_control=bbr
@@ -52,9 +60,22 @@
       net.core.wmem_max=16777216
     mode: '0644'
 
+- name: Apply transparent hugepage mode through tmpfiles at boot
+  copy:
+    dest: /etc/tmpfiles.d/transparent-hugepage.conf
+    mode: '0644'
+    content: |
+      w /sys/kernel/mm/transparent_hugepage/enabled - - - - madvise
+
 - name: Load tcp_bbr module
   copy:
     dest: /etc/modules-load.d/bbr.conf
     content: |
       tcp_bbr
     mode: '0644'
+
+- name: Ensure cpupower service is enabled and started
+  systemd:
+    name: cpupower.service
+    enabled: true
+    state: started

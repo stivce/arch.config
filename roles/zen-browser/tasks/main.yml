@@ -1,9 +1,14 @@
 ---
+- name: Check whether zen-browser is installed
+  command: pacman -Q zen-browser-bin
+  register: zen_browser_query
+  changed_when: false
+  failed_when: false
+
 - name: Install zen-browser from AUR
-  shell: yay -S --noconfirm --needed zen-browser-bin
+  command: yay -S --noconfirm --needed zen-browser-bin
   become_user: "{{ local_user }}"
-  register: result
-  changed_when: "'installing' in result.stdout"
+  when: zen_browser_query.rc != 0
 
 - name: Ensure Zen Browser distribution directory exists
   file:

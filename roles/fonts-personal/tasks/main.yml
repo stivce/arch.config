@@ -1,6 +1,11 @@
 ---
+- name: Check whether Apple emoji font is installed
+  command: pacman -Q ttf-apple-emoji
+  register: apple_emoji_query
+  changed_when: false
+  failed_when: false
+
 - name: Install Apple emoji font from AUR
-  shell: yay -S --noconfirm --needed ttf-apple-emoji
+  command: yay -S --noconfirm --needed ttf-apple-emoji
   become_user: "{{ local_user }}"
-  register: result
-  changed_when: "'installing' in result.stdout"
+  when: apple_emoji_query.rc != 0

@@ -1,2 +1,2 @@
 [local]
-localhost ansible_connection=local
+10.0.0.98 ansible_user=sn0w

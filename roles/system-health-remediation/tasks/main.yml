@@ -1,0 +1,25 @@
+---
+- name: Remove legacy tmpfiles CPU governor write rule
+  file:
+    path: /etc/tmpfiles.d/cpu-governor.conf
+    state: absent
+
+- name: Remove invalid transparent_hugepage sysctl setting
+  lineinfile:
+    path: /etc/sysctl.d/99-laptop.conf
+    regexp: '^kernel\.transparent_hugepage='
+    state: absent
+
+- name: Add NVIDIA GSP fallback to reduce GSP heartbeat failures
+  copy:
+    dest: /etc/modprobe.d/nvidia-gsp.conf
+    mode: '0644'
+    content: |
+      options nvidia NVreg_EnableGpuFirmware=0
+
+- name: Enable systemd-resolved when available to satisfy resolve1 activation
+  systemd:
+    name: systemd-resolved.service
+    enabled: true
+    state: started
+  failed_when: false

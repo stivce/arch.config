@@ -6,11 +6,17 @@
       - slurp
     state: present
 
-- name: Install AUR screenshot tools
-  shell: yay -S --noconfirm --needed {{ item }}
-  become_user: "{{ local_user }}"
-  register: result
-  changed_when: "'installing' in result.stdout"
+- name: Check whether screenshot AUR tools are installed
+  command: pacman -Q {{ item }}
+  register: screenshot_aur_query
+  changed_when: false
+  failed_when: false
   loop:
     - hyprquickframe
     - hyprshot
+
+- name: Install missing screenshot AUR tools
+  command: yay -S --noconfirm --needed {{ item.item }}
+  become_user: "{{ local_user }}"
+  loop: "{{ screenshot_aur_query.results }}"
+  when: item.rc != 0

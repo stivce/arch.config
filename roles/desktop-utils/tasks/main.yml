@@ -12,11 +12,17 @@
       - fastfetch
     state: present
 
-- name: Install AUR packages
-  shell: yay -S --noconfirm --needed {{ item }}
-  become_user: "{{ local_user }}"
-  register: result
-  changed_when: "'installing' in result.stdout"
+- name: Check whether desktop AUR packages are installed
+  command: pacman -Q {{ item }}
+  register: desktop_aur_query
+  changed_when: false
+  failed_when: false
   loop:
     - localsend-bin
     - helium-browser-beta-bin
+
+- name: Install missing desktop AUR packages
+  command: yay -S --noconfirm --needed {{ item.item }}
+  become_user: "{{ local_user }}"
+  loop: "{{ desktop_aur_query.results }}"
+  when: item.rc != 0

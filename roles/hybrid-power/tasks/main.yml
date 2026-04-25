@@ -1,0 +1,63 @@
+---
+- name: Install hybrid graphics and power profile packages
+  pacman:
+    name:
+      - nvidia-prime
+      - power-profiles-daemon
+      - python-gobject
+    state: present
+
+- name: Enable and start power-profiles-daemon
+  systemd:
+    name: power-profiles-daemon.service
+    enabled: true
+    state: started
+
+- name: Allow wheel users to switch power profiles via polkit
+  copy:
+    dest: /etc/polkit-1/rules.d/49-powerprofiles.rules
+    mode: '0644'
+    content: |
+      polkit.addRule(function(action, subject) {
+          if (action.id == "org.freedesktop.UPower.PowerProfiles.switch-profile" && subject.isInGroup("wheel")) {
+              return polkit.Result.YES;
+          }
+      });
+
+- name: Optionally enable nvidia-powerd service
+  systemd:
+    name: nvidia-powerd.service
+    enabled: true
+    state: started
+  when: hybrid_power_enable_nvidia_powerd | bool
+  failed_when: false
+
+- name: Ensure Hyprland env directory exists
+  file:
+    path: "/home/{{ local_user }}/.config/hypr/hyprland"
+    state: directory
+    mode: '0755'
+  become_user: "{{ local_user }}"
+
+- name: Prefer AMD iGPU first for Hyprland DRM device selection
+  lineinfile:
+    path: "/home/{{ local_user }}/.config/hypr/hyprland/env.conf"
+    regexp: '^env = AQ_DRM_DEVICES,'
+    line: 'env = AQ_DRM_DEVICES,/dev/dri/by-path/pci-0000:64:00.0-card:/dev/dri/by-path/pci-0000:01:00.0-card'
+    create: true
+    mode: '0644'
+  become_user: "{{ local_user }}"
+
+- name: Check whether dotfiles Hyprland env exists
+  stat:
+    path: "/home/{{ local_user }}/.dotfiles/.config/hypr/hyprland/env.conf"
+  register: hybrid_power_dotfiles_env
+  become_user: "{{ local_user }}"
+
+- name: Persist AMD-first DRM order in dotfiles Hyprland env
+  lineinfile:
+    path: "/home/{{ local_user }}/.dotfiles/.config/hypr/hyprland/env.conf"
+    regexp: '^env = AQ_DRM_DEVICES,'
+    line: 'env = AQ_DRM_DEVICES,/dev/dri/by-path/pci-0000:64:00.0-card:/dev/dri/by-path/pci-0000:01:00.0-card'
+  when: hybrid_power_dotfiles_env.stat.exists
+  become_user: "{{ local_user }}"

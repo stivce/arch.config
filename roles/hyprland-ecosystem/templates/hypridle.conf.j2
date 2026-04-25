@@ -1,0 +1,16 @@
+general {
+    lock_cmd = {{ hypridle_lock_cmd }}
+    before_sleep_cmd = {{ hypridle_before_sleep_cmd }}
+    after_sleep_cmd = {{ hypridle_after_sleep_cmd }}
+}
+
+listener {
+    timeout = {{ hypridle_lock_timeout_seconds }}
+    on-timeout = {{ hypridle_before_sleep_cmd }}
+}
+
+listener {
+    timeout = {{ hypridle_dpms_timeout_seconds }}
+    on-timeout = {{ hypridle_dpms_off_cmd }}
+    on-resume = {{ hypridle_dpms_on_cmd }}
+}

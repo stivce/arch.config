@@ -4,22 +4,21 @@
     path: /etc/mkinitcpio.conf
     regexp: '^#?COMPRESSION='
     line: 'COMPRESSION="zstd"'
+  notify: Rebuild initramfs
 
 - name: Set zstd compression options
   lineinfile:
     path: /etc/mkinitcpio.conf
     regexp: '^#?COMPRESSION_OPTIONS='
     line: 'COMPRESSION_OPTIONS=(-2)'
+  notify: Rebuild initramfs
 
 - name: Enable module decompression for faster loading
   lineinfile:
     path: /etc/mkinitcpio.conf
     regexp: '^#?MODULES_DECOMPRESS='
     line: 'MODULES_DECOMPRESS="yes"'
-
-- name: Rebuild initramfs
-  command: mkinitcpio -P
-  changed_when: true
+  notify: Rebuild initramfs
 
 - name: Set systemd default stop timeout
   lineinfile:

@@ -8,6 +8,6 @@
 
 - name: Enable and start bluetooth service
   systemd:
-    name: bluetooth
+    name: bluetooth.service
     enabled: true
     state: started
